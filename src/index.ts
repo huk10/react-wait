@@ -2,8 +2,8 @@
  * 用于跟踪异步的加载状态，状态全局管理。
  *  1. 页面中的状态值不用时，会尽量自动删除。
  */
-import { isPromise } from './utils';
-import { useEffect, useState } from 'react';
+import {isPromise} from './utils';
+import {useEffect, useState} from 'react';
 
 class Store<T> {
   private data: Map<string, T> = new Map();
@@ -22,7 +22,7 @@ class Store<T> {
 
   notify(key: string, value: T) {
     const cbs = (this.listeners.get(key) || []).slice();
-    cbs.forEach((cb) => cb(value));
+    cbs.forEach(cb => cb(value));
   }
   subscribe(key: string, callback: (val: T) => void) {
     if (!key || typeof callback !== 'function') throw new Error('params error');
@@ -35,7 +35,7 @@ class Store<T> {
   unsubscribe(key: string, callback: (val: T) => void) {
     if (!key || typeof callback !== 'function') throw new Error('params error');
     const cbs = (this.listeners.get(key) || []).slice();
-    const lis = cbs.filter((val) => val !== callback);
+    const lis = cbs.filter(val => val !== callback);
     this.listeners.set(key, lis);
   }
 }
@@ -53,13 +53,13 @@ export function useWaiting<T extends string>(keys: T[]): Record<T, boolean> {
   });
 
   useEffect(() => {
-    const unsubscribes = keys.map((key) =>
-      globalStore.subscribe(key, (val) => {
-        setValue((oldValue) => ({ ...oldValue, [key]: val > 0 }));
-      }),
+    const unsubscribes = keys.map(key =>
+      globalStore.subscribe(key, val => {
+        setValue(oldValue => ({...oldValue, [key]: val > 0}));
+      })
     );
     return () => {
-      unsubscribes.map((unsubscribe) => {
+      unsubscribes.map(unsubscribe => {
         for (const key of keys) {
           if (globalStore.getValue(key, 0) === 0) {
             globalStore.delValue(key);
