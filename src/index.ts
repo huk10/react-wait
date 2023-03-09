@@ -12,10 +12,12 @@ class Store<T> {
   delValue(key: string) {
     this.data.delete(key);
   }
+
   setValue(key: string, value: T) {
     this.data.set(key, value);
     this.notify(key, value);
   }
+
   getValue(key: string, defaultValue: T) {
     return this.data.get(key) ?? defaultValue;
   }
@@ -24,6 +26,7 @@ class Store<T> {
     const cbs = (this.listeners.get(key) || []).slice();
     cbs.forEach(cb => cb(value));
   }
+
   subscribe(key: string, callback: (val: T) => void) {
     if (!key || typeof callback !== 'function') throw new Error('params error');
     const cbs = (this.listeners.get(key) || []).slice();
@@ -32,6 +35,7 @@ class Store<T> {
     this.listeners.set(key, cbs);
     return () => this.unsubscribe(key, callback);
   }
+
   unsubscribe(key: string, callback: (val: T) => void) {
     if (!key || typeof callback !== 'function') throw new Error('params error');
     const cbs = (this.listeners.get(key) || []).slice();
@@ -40,46 +44,62 @@ class Store<T> {
   }
 }
 
-const globalStore = new Store<number>();
-
-// 订阅 keys 的变更
-export function useWaiting<T extends string>(keys: T[]): Record<T, boolean> {
+// 同一个key存在多条进度，那么最慢的那条结束后，才会结束
+function useWaiting<T extends string>(store: Store<number>, keys: T[] | T): Record<T, boolean> {
   const [value, setValue] = useState(() => {
     const result = {} as Record<T, boolean>;
-    for (const key of keys) {
-      result[key] = globalStore.getValue(key, 0) > 0;
+    for (const key of Array.isArray(keys) ? keys : [keys]) {
+      result[key] = store.getValue(key, 0) > 0;
     }
     return result;
   });
-
   useEffect(() => {
-    const unsubscribes = keys.map(key =>
-      globalStore.subscribe(key, val => {
+    // react 自带批处理，这里不需要做。
+    const keyArray = Array.isArray(keys) ? keys : [keys];
+    const unsubscribes = keyArray.map(key =>
+      store.subscribe(key, val => {
         setValue(oldValue => ({...oldValue, [key]: val > 0}));
       })
     );
     return () => {
-      unsubscribes.map(unsubscribe => {
-        for (const key of keys) {
-          if (globalStore.getValue(key, 0) === 0) {
-            globalStore.delValue(key);
-          }
+      unsubscribes.forEach(unsubscribe => unsubscribe());
+      for (const key of keyArray) {
+        if (store.getValue(key, 0) === 0) {
+          store.delValue(key);
         }
-        unsubscribe();
-      });
+      }
     };
   }, []);
-
   return value;
 }
 
-// 同一个key存在多条进度，那么最慢的那条结束后，才会结束
-export function waitFor<T>(key: string, func: () => Promise<T>): Promise<T> {
+// 订阅 keys 的变更
+function waitFor<K extends string, T>(store: Store<number>, key: K, func: () => Promise<T>): Promise<T> {
   const result = func();
   if (isPromise(result)) {
     // 该方法对同一个key进行处理时，会不断加一，每个进程结束后会减一，如果最终值为0时表示所有进程都结束了。
-    globalStore.setValue(key, globalStore.getValue(key, 0) + 1);
-    result.finally(() => globalStore.setValue(key, globalStore.getValue(key, 0) - 1));
+    store.setValue(key, store.getValue(key, 0) + 1);
+    result.finally(() => store.setValue(key, store.getValue(key, 0) - 1));
   }
   return result;
+}
+
+// 支持泛型让字符串得到类型提示
+// type keys = "A"|"B"|"C"
+//
+// const {waitFor: w} = createStore<keys>()
+//
+// w('A', async () => {
+//
+// })
+export function createStore<K extends string>() {
+  const store = new Store<number>();
+  return {
+    useWaiting(keys: K | K[]) {
+      return useWaiting(store, keys);
+    },
+    waitFor<T>(key: K, func: () => Promise<T>): Promise<T> {
+      return waitFor<K, T>(store, key, func);
+    },
+  };
 }

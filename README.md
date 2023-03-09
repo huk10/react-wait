@@ -10,28 +10,26 @@
 ## Installation
 
 ```bash
+
 ```
 
 ## Usage/Examples
 
 ```typescript jsx
-import { useEffect } from 'react';
-import { useWaiting, waitFor } from '@huk/react-wait'
+import {useEffect} from 'react';
+import {useWaiting, waitFor} from '@huk/react-wait';
 
 function Component() {
-  const {loading, loading2} = useWaiting(['loading', 'loading2'])
+  const {loading, loading2} = useWaiting(['loading', 'loading2']);
 
   useEffect(() => {
     waitFor('loading', async () => {
       // fetch data ...
-      return []
-    })
-  }, [])
-  return (
-    <div>loading: { loading }</div>
-  )
+      return [];
+    });
+  }, []);
+  return <div>loading: {loading}</div>;
 }
-
 ```
 
 ## Demo
@@ -49,4 +47,3 @@ function Component() {
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
-

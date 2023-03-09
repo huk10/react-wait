@@ -1,6 +1,8 @@
 import {it, expect, describe} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
-import {useWaiting, waitFor} from './index';
+import {createStore} from './index';
+
+const {waitFor, useWaiting} = createStore()
 
 async function sleep(num: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, num));
