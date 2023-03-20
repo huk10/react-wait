@@ -1,18 +1,24 @@
 {
   "name": "@huk/react-wait",
-  "version": "1.0.0",
   "type": "module",
-  "main": "./src/index.ts",
+  "version": "1.0.0",
+  "sideEffects": false,
+  "license": "MIT",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./lib/index.d.ts",
+      "module": "./lib/index.js",
+      "import": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
   },
-  "files": [
-    "./src"
-  ],
+  "files": ["lib"],
   "scripts": {
     "test": "vitest",
     "coverage": "vitest run --coverage",
-    "release": "release-it"
+    "release": "release-it",
+    "clean": "[ -d ./lib ] && rm -r ./lib || echo ''",
+    "build": "npm run clean && tsc --build"
   },
   "release-it": {
     "npm": {
@@ -20,7 +26,7 @@
     }
   },
   "peerDependencies": {
-    "react": "^18.1.0"
+    "react": "^17.0.0"
   },
   "devDependencies": {
     "@testing-library/react": "^14.0.0",
